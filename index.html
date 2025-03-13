@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar</title>
+    <style>
+        @import url('https://fonts.cdnfonts.com/css/noah-grotesque');
+
+        body {
+            background-color: #0e0e0e;
+            color: white;
+            font-family: 'Noah Grotesque', sans-serif;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #year {
+            font-size: 12vh;
+            margin-bottom: 0;
+        }
+
+        #month {
+            font-size: 5vh;
+            height: calc(3vw + 5vh);
+        }
+
+        #content {
+            outline: .5vh solid white;
+            outline-offset: -1px;
+            width: calc(50vw + 200px);
+            border-radius: 2vh;
+            overflow: hidden;
+            animation: contentIn .5s cubic-bezier(0, 1, 0, 1);
+            transform-origin: top;
+        }
+
+        
+        @keyframes contentIn {
+            from {
+                transform: scaleY(0);
+            }
+            to {
+                transform: scaleY(1);
+            }
+            
+        }
+
+        #weekDays td {
+            height: 4vh;
+            outline: 3px solid white;
+            font-weight: bold;
+        }
+
+        #weekDays td {
+            width: 5vw;
+        }
+
+        #days td {
+            width: 5vw;
+            height: calc(2vw + 4vh);
+            outline: 1px solid white;
+            transition: .2s cubic-bezier(0.075, 0, 0.165, 1);
+            background-color: #0e0e0e;
+        }
+
+        #days td:hover {
+            background-color: #1e1e1e;
+            scale: 108%;
+            z-index: 99999;
+        }
+
+        #days td:active {
+            scale: 90%;
+            background-color: #2e2e2e;
+        }
+
+        .freeDay {
+            background: radial-gradient(#4f0e0e 0%, #ffffff00 100%);
+        }
+
+        .freeDay:hover {
+            background: radial-gradient(#5f1e1e 0%, #ffffff00 100%);
+        }
+
+        .freeDay:active {
+            background: radial-gradient(#6f2e2e 0%, #ffffff00 100%);
+        }
+
+        .today {
+            background: radial-gradient(#003cffb0 25%, #ffffff00 100%);
+            border: 6px solid white !important;
+            z-index: 99999 !important;
+        }
+
+        .dayNotInMonth {
+            opacity: 25%;
+        }
+
+        .dayNotInMonth:hover {
+            opacity: 35%;
+            scale: 100% !important;
+        }
+
+        button {
+            height: fit-content;
+            width: fit-content;
+            padding: 1vw 2vw;
+            border-radius: 100px;
+            background-color: transparent;
+            color: white;
+            font-size: 2vh;
+            border: none;
+            transition: transform .3s cubic-bezier(.2, 2,.27,1), translate .3s cubic-bezier(.65,-0.04,.27,1.4);
+        }
+
+        button:hover {
+            cursor: pointer;
+            transform: scale(1.1);
+            background-color: #1e1e1e;
+        }
+
+        button:active {
+            transform: scale(0.85);
+        }
+    </style>
+</head>
+<body>
+    <h1 id="year">9999</h1>
+    <table id="content">
+        <thead>
+            <tr><th><button onclick="previous()">&#9664;</button></th><th id="month" colspan="5">placeholder</th><th><button onclick="next()">&#9654;</button></th></tr>
+            <tr id="weekDays"><td>PON</td><td>WT</td><td>ŚR</td><td>CZW</td><td>PT</td><td class="freeDay">SOB</td><td class="freeDay">ND</td></tr>
+        </thead>
+        <tbody id="days">
+            
+        </tbody>
+    </table>
+    
+    <script>
+        const yearDisplay = document.querySelector('#year');
+        const monthDisplay = document.querySelector('#month');
+        const content = document.querySelector('#content tbody');
+        const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+
+        let displayedDate = new Date();
+        function updateDate() {
+            const date = displayedDate;
+            let rn = false;
+            if(displayedDate.getFullYear()==new Date().getFullYear() && displayedDate.getMonth()==new Date().getMonth()) {
+                rn = true;
+            }
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const day = date.getDate();
+            const weekDay = date.getDay();
+            const howManyDays = new Date(year, month + 1, 0).getDate(); //inaczej troche niz bylo na lekcji ale krócej
+            const howManyDaysBefore = new Date(year, month, 0).getDate();
+            let firstDayOfWeek = new Date(year, month, 1).getDay();
+            firstDayOfWeek = firstDayOfWeek === 0 ? 7 : firstDayOfWeek; // Adjust for Sunday being 0
+        
+            yearDisplay.textContent = year;
+            monthDisplay.textContent = monthNames[month];
+
+            let displayedDays = [];
+            for (let i = 1; i < firstDayOfWeek; i++) {
+                displayedDays.push(howManyDaysBefore - firstDayOfWeek + i + 1);
+            }
+            let _firstDayOfWeek = firstDayOfWeek;
+            for (let i = 1; i <= howManyDays; i++) {
+                displayedDays.push(i);
+                _firstDayOfWeek++;
+            }
+            for (let i=1; i<=(8-(_firstDayOfWeek % 7))%7; i++) { // 8 cuz 7 - 1
+                displayedDays.push(i);
+            }
+
+            let thisMonth = false; // for detecting days that are in the current month
+            for (let i = 0; i < displayedDays.length/7; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j < 7; j++) {
+                    const cell = document.createElement('td');
+                    cell.textContent = displayedDays[i*7 + j];
+                    if ((i*7 + j) % 7 >= 5) {
+                        cell.className = 'freeDay';
+                    }
+                    if (displayedDays[i*7 + j] == 1) {
+                        thisMonth = !thisMonth;
+                    }
+                    if (!thisMonth) {
+                        cell.classList.add('dayNotInMonth');
+                    }
+                    if (displayedDays[i*7 + j] == day && thisMonth && rn) {
+                        cell.className = 'today';
+                    }
+                    setTimeout(() => {
+                        row.appendChild(cell);
+                    }, );
+                    row.animate([
+                        {transform: 'translateX(-100px)', opacity: 0},
+                        {transform: 'translateX(0)', opacity: 1}
+                    ], {
+                        duration: 500,
+                        easing: 'cubic-bezier(0.075, .5, 0, 1)',
+                        fill: 'both',
+                        delay: i*60
+                    });
+                }
+                content.appendChild(row);
+            }
+
+        }
+        updateDate();
+
+        function previous() {
+            displayedDate = new Date(displayedDate.getFullYear(), displayedDate.getMonth() - 1, displayedDate.getDate());
+            content.innerHTML = '';
+            updateDate();
+            monthDisplay.animate([
+                {transform: 'translateX(100px)', opacity: 0},
+                {transform: 'translateX(0)', opacity: 1}
+            ], {
+                duration: 500,
+                easing: 'cubic-bezier(0, 1, 0, 1)',
+                fill: 'both'
+            });
+            document.getElementById('content').style.animation = "none";
+            void document.getElementById('content').offsetWidth;
+            document.getElementById('content').style.animation = "";
+            document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(0, 1, 0, 1)`;
+            
+            if (displayedDate.getMonth()==11) {
+                yearDisplay.animate([
+                    {transform: 'translateY(100px)', opacity: 0},
+                    {transform: 'translateY(0)', opacity: 1}
+                ], {
+                    duration: 500,
+                    easing: 'cubic-bezier(0, 1, 0, 1)',
+                    fill: 'both'
+                });
+            }
+        }
+        
+        function next() {
+            displayedDate = new Date(displayedDate.getFullYear(), displayedDate.getMonth() + 1, displayedDate.getDate());
+            content.innerHTML = '';
+            updateDate();
+            monthDisplay.animate([
+                {transform: 'translateX(-100px)', opacity: 0},
+                {transform: 'translateX(0)', opacity: 1}
+            ], {
+                duration: 500,
+                easing: 'cubic-bezier(0, 1, 0, 1)',
+                fill: 'both'
+            });
+            document.getElementById('content').style.animation = "none";
+            void document.getElementById('content').offsetWidth;
+            document.getElementById('content').style.animation = "";
+            document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(0, 1, 0, 1)`;
+
+            if (displayedDate.getMonth()==0) {
+                yearDisplay.animate([
+                    {transform: 'translateY(100px)', opacity: 0},
+                    {transform: 'translateY(0)', opacity: 1}
+                ], {
+                    duration: 500,
+                    easing: 'cubic-bezier(0, 1, 0, 1)',
+                    fill: 'both'
+                });
+            }
+        }
+    </script>
+</body>
+</html>
