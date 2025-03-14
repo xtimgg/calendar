@@ -35,14 +35,14 @@
             width: calc(50vw + 200px);
             border-radius: 2vh;
             overflow: hidden;
-            animation: contentIn .5s cubic-bezier(0, 1, 0, 1);
+            animation: contentIn .5s cubic-bezier(.2, .9, 0, 1);
             transform-origin: top;
         }
 
         
         @keyframes contentIn {
             from {
-                transform: scaleY(0);
+                transform: scaleY(.66);
             }
             to {
                 transform: scaleY(1);
@@ -231,7 +231,7 @@
             document.getElementById('content').style.animation = "none";
             void document.getElementById('content').offsetWidth;
             document.getElementById('content').style.animation = "";
-            document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(0, 1, 0, 1)`;
+            document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(.2, .9, 0, 1)`;
             
             if (displayedDate.getMonth()==11) {
                 yearDisplay.animate([
@@ -260,7 +260,7 @@
             document.getElementById('content').style.animation = "none";
             void document.getElementById('content').offsetWidth;
             document.getElementById('content').style.animation = "";
-            document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(0, 1, 0, 1)`;
+            document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(.2, .9, 0, 1)`;
 
             if (displayedDate.getMonth()==0) {
                 yearDisplay.animate([
