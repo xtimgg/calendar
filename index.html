@@ -35,10 +35,14 @@
             transition: 1s cubic-bezier(.2, .9, 0, 1);
         }
 
+        button:hover + #content {
+            transform: scale(1.1);
+        }
+
         #content {
             outline: .5vh solid white;
             outline-offset: -1px;
-            height: 50vh;
+            height: calc(25vw + 200px);
             width: calc(35vw + 300px);
             border-radius: 2vh;
             overflow: hidden;
@@ -112,6 +116,7 @@
 
         .holiday {
             background: radial-gradient(#a30000 0%, #ffffff00 100%);
+            transition: 1s cubic-bezier(.2, .9, 0, 1);
         }
 
         tbody.holiday:hover {
@@ -162,13 +167,14 @@
         
         .tooltip {
             font-size: 20px;
-            backdrop-filter: blur(6px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             position: fixed;
-            background: transparent;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
             color: #fff;
-            outline: 1px solid #fff;
+            outline: 1px solid rgba(255, 255, 255, 0.18);
             outline-offset: -1px;
-            box-shadow: 0 0 10px black, 0 0 10px black;
+            box-shadow: 0 8px 32px black;
             padding: 8px 12px;
             border-radius: 14px;
             opacity: 0;
@@ -182,8 +188,13 @@
         .tooltip.visible {
             opacity: 1;
             transform: translate(-50%, 0) scale(1);
-            transition: all 0.3s cubic-bezier(.2,1.33,.33,1);
+            transition: all .3s cubic-bezier(.2,1.33,.33,1);
         }
+
+        .tooltip.error {
+            background: linear-gradient(100deg, rgba(255, 0, 0, 0.3) 0%, rgba(255, 0, 0, 0.1) 100%);
+        }
+
     </style>
 </head>
 <body>
@@ -202,7 +213,7 @@
         const content = document.querySelector('#content tbody');
         const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
 
-        let displayedDate = new Date(2025, 0, 5);
+        let displayedDate = new Date(1975, 0, 5);
         function updateDate() {
             content.innerHTML = '';
             const date = displayedDate;
@@ -292,60 +303,41 @@
         }, millisTillMidnight);
 
 
-        function previous() {
-            displayedDate = new Date(displayedDate.getFullYear(), displayedDate.getMonth() - 1, displayedDate.getDate());
+        function changeMonth(direction) {
+            displayedDate = new Date(displayedDate.getFullYear(), displayedDate.getMonth() + direction, displayedDate.getDate());
             updateDate();
+            const translateX = direction === -1 ? '100px' : '-100px';
             monthDisplay.animate([
-                {transform: 'translateX(100px)', opacity: 0},
-                {transform: 'translateX(0)', opacity: 1}
+            {transform: `translateX(${translateX})`, opacity: 0},
+            {transform: 'translateX(0)', opacity: 1}
             ], {
-                duration: 500,
-                easing: 'cubic-bezier(0, 1, 0, 1)',
-                fill: 'both'
-            });
-            document.getElementById('content').style.animation = "none";
-            void document.getElementById('content').offsetWidth;
-            document.getElementById('content').style.animation = "";
-            document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(.2,1.6,.3,1)`;
-            
-            if (displayedDate.getMonth()==11) {
-                yearDisplay.animate([
-                    {transform: 'translateY(100px)', opacity: 0},
-                    {transform: 'translateY(0)', opacity: 1}
-                ], {
-                    duration: 500,
-                    easing: 'cubic-bezier(0, 1, 0, 1)',
-                    fill: 'both'
-                });
-            }
-        }
-        
-        function next() {
-            displayedDate = new Date(displayedDate.getFullYear(), displayedDate.getMonth() + 1, displayedDate.getDate());
-            updateDate();
-            monthDisplay.animate([
-                {transform: 'translateX(-100px)', opacity: 0},
-                {transform: 'translateX(0)', opacity: 1}
-            ], {
-                duration: 500,
-                easing: 'cubic-bezier(0, 1, 0, 1)',
-                fill: 'both'
+            duration: 500,
+            easing: 'cubic-bezier(0, 1, 0, 1)',
+            fill: 'both'
             });
             document.getElementById('content').style.animation = "none";
             void document.getElementById('content').offsetWidth;
             document.getElementById('content').style.animation = "";
             document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(.2,1.6,.3,1)`;
 
-            if (displayedDate.getMonth()==0) {
-                yearDisplay.animate([
-                    {transform: 'translateY(100px)', opacity: 0},
-                    {transform: 'translateY(0)', opacity: 1}
-                ], {
-                    duration: 500,
-                    easing: 'cubic-bezier(0, 1, 0, 1)',
-                    fill: 'both'
-                });
+            if ((direction === -1 && displayedDate.getMonth() === 11) || (direction === 1 && displayedDate.getMonth() === 0)) {
+            yearDisplay.animate([
+                {transform: 'perspective(1500px) rotateY(90deg)', opacity: 0},
+                {transform: 'perspective(1500px) rotateY(0deg)', opacity: 1}
+            ], {
+                duration: 500,
+                easing: 'cubic-bezier(.2,1.6,.3,1)',
+                fill: 'both'
+            });
             }
+        }
+
+        function previous() {
+            changeMonth(-1);
+        }
+
+        function next() {
+            changeMonth(1);
         }
 
         async function getHolidays(countryCode, year = new Date().getFullYear()) {
@@ -355,12 +347,27 @@
                 );
 
                 if (!response.ok) {
-                throw new Error(`Failed to fetch holidays: ${response.status}`);
+                    throw new Error(`Failed to fetch holidays: ${response.status}`);
                 }
-
+                
                 const holidays = await response.json();
                 return holidays;
             } catch (error) {
+                if(error.message.includes('400')) {
+                    errorPopup(`Daty świąt niedostępne dla wybranego roku.`);
+                } else if(error.message.includes('Failed to fetch')) {
+                    errorPopup(`Nie udało się pobrać informacji o świętach. Możliwe problemy z internetem.`);
+                } else if(error.message.includes('404')) {
+                    errorPopup(`Nie udało się pobrać informacji o świętach. Możliwe, że serwer jest niedostępny.`);
+                } else if(error.message.includes('500')) {
+                    errorPopup(`Błąd serwera. Spróbuj ponownie później.`);
+                } else if(error.message.includes('timeout')) {
+                    errorPopup(`Przekroczono czas oczekiwania na odpowiedź serwera.`);
+                } else if(error.message.includes('403')) {
+                    errorPopup(`Brak dostępu do danych o świętach.`);
+                } else {
+                    errorPopup(`Nie udało się pobrać informacji o świętach.`);
+                }
                 console.error("Error fetching holidays:", error.message);
                 return [];
             }
@@ -375,7 +382,7 @@
             document.querySelectorAll('[data-tip]').forEach(el => {
                 el.addEventListener('mouseenter', e => {
                     clearTimeout(t);
-                    tip.textContent = el.dataset.tip;
+                    tip.classList.remove('error');
                     const rect = e.target.getBoundingClientRect();
                     let left = rect.left + rect.width / 2;
                     if (left < tip.offsetWidth / 2) {
@@ -386,12 +393,31 @@
                     tip.style.left = `${left}px`;
                     tip.style.top = `${rect.bottom + 5}px`;
                     tip.classList.add('visible');
+                    tip.textContent = el.dataset.tip;
                 });
                 
                 el.addEventListener('mouseleave', () => {
-                    t = setTimeout(() => tip.classList.remove('visible'), 10);
+                    tip.classList.remove('visible');
                 });
             });
+        }
+
+        function errorPopup(message) {
+            if (tip.classList.contains('error')) {
+                tip.textContent = message;
+                return;
+            }
+            tip.style.left = `50vw`;
+            tip.style.top = `5vh`;
+            tip.classList.add('visible');
+            tip.classList.add('error');
+            tip.textContent = message;
+            setTimeout(() => {
+                tip.classList.remove('visible');
+            }, 5000);
+            setTimeout(() => {
+                tip.classList.remove('error');
+            }, 5200);
         }
 
         window.addEventListener('resize', () => tip.classList.remove('visible'));
