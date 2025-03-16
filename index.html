@@ -213,6 +213,7 @@
 
         .tooltip.error {
             background: linear-gradient(100deg, rgba(255, 0, 0, 0.3) 0%, rgba(255, 0, 0, 0.1) 100%);
+            white-space: inherit;
         }
 
     </style>
@@ -340,7 +341,7 @@
             document.getElementById('content').style.animation = "";
             document.getElementById('content').style.animation = `contentIn .5s cubic-bezier(.2,1.6,.3,1)`;
 
-            if ((direction === -1 && displayedDate.getMonth() === 11) || (direction === 1 && displayedDate.getMonth() === 0)) {
+            if ((direction === -1 && displayedDate.getMonth() === 11) || (direction === 1 && displayedDate.getMonth() === 0) || Math.abs(direction)>1) {
             yearDisplay.animate([
                 {transform: 'perspective(500px) rotateY(90deg)', opacity: 0},
                 {transform: 'perspective(500px) rotateY(0deg)', opacity: 1}
@@ -488,12 +489,7 @@
                 ${260 + mouseX*1.5}px ${-320 * progress}px,
                 ${-280 + mouseX*2}px ${-600 * progress}px
             `;
-
-            if (progress < 1) {
-                requestAnimationFrame(step);
-            } else {
-                requestAnimationFrame(step);
-            }
+            requestAnimationFrame(step);
             }
 
             requestAnimationFrame(step);
@@ -513,7 +509,41 @@
         //     body.style.backgroundColor = `hsl(${newHue}, 100%, 10%)`;
         //     body.dataset.hue = newHue;
         // }, 2000);
-            
+
+        yearDisplay.addEventListener('dblclick', () => {
+            const currentDate = new Date();
+
+            if (Math.abs(currentDate.getTime() - displayedDate.getTime()) <= 365*24*3600*1000) {
+            function updateInterval() {
+                if (displayedDate < currentDate) {
+                next();
+                } else {
+                previous();
+                }
+                if (displayedDate.setHours(0, 0, 0, 0) == currentDate.setHours(0, 0, 0, 0)) {
+                return;
+                }
+                setTimeout(updateInterval, 100);
+            }
+            updateInterval();
+            } else {
+            const monthsDifference = (currentDate.getFullYear() - displayedDate.getFullYear()) * 12 + (currentDate.getMonth() - displayedDate.getMonth());
+            changeMonth(monthsDifference);
+            }
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        if (dateParam) {
+            const [year, month, day] = dateParam.split('-').map(Number);
+            if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            displayedDate = new Date(year, month - 1, day);
+            updateDate();
+            } else if (!isNaN(year)) {
+                displayedDate = new Date(year, 0, 1);
+                updateDate();
+            }
+        }
     </script>
 </body>
 </html>
