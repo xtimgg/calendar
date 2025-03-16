@@ -351,7 +351,7 @@
                 fill: 'both'
             });
             }
-            speedUp += direction;
+            speedUp += direction > 0 ? Math.min(direction, 10) : Math.max(direction, -10);
         }
 
         function previous() {
@@ -447,15 +447,17 @@
         function errorPopup(message, err=true) {
             if (tip.classList.contains('error')) {
                 tip.textContent = message;
+                if(tip.style.filter == `hue-rotate(120deg)`) tip.style.filter = ``;
                 return;
             }
             tip.style.left = `50vw`;
             tip.style.top = `5vh`;
             tip.classList.add('visible');
+            tip.classList.add('error');
             if(err) {
-                tip.classList.add('error');
+                tip.style.filter = ``
             } else {
-                tip.classList.remove('error');
+                tip.style.filter = `hue-rotate(120deg)`
             }
             tip.textContent = message;
             setTimeout(() => {
@@ -512,22 +514,23 @@
 
         yearDisplay.addEventListener('dblclick', () => {
             const currentDate = new Date();
+            if(displayedDate.setHours(0, 0, 0, 0) == currentDate.setHours(0, 0, 0, 0)) return;
 
-            if (Math.abs(currentDate.getTime() - displayedDate.getTime()) <= 365*24*3600*1000) {
-            function updateInterval() {
-                if (displayedDate < currentDate) {
-                next();
-                } else {
-                previous();
-                }
-                if (displayedDate.setHours(0, 0, 0, 0) == currentDate.setHours(0, 0, 0, 0)) {
-                return;
-                }
-                setTimeout(updateInterval, 100);
-            }
-            updateInterval();
-            } else {
             const monthsDifference = (currentDate.getFullYear() - displayedDate.getFullYear()) * 12 + (currentDate.getMonth() - displayedDate.getMonth());
+            if (Math.abs(monthsDifference) <= 12) {
+                (async function() {
+                    for (let i = 0; i < Math.abs(monthsDifference); i++) {
+                        if (monthsDifference > 0) {
+                            next();
+                        } else {
+                            previous();
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 100)); //idk how that works but it does :>
+                    }
+                })();
+                
+            
+            } else {
             changeMonth(monthsDifference);
             }
         });
