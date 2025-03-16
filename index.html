@@ -448,6 +448,7 @@
             if (tip.classList.contains('error')) {
                 tip.textContent = message;
                 if(tip.style.filter == `hue-rotate(120deg)`) tip.style.filter = ``;
+                if(!err) tip.style.filter = `hue-rotate(120deg)`;
                 return;
             }
             tip.style.left = `50vw`;
