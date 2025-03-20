@@ -7,6 +7,10 @@
     <style>
         @import url('https://fonts.cdnfonts.com/css/noah-grotesque');
 
+        * {
+            transition: 1s cubic-bezier(.2, .9, 0, 1);
+        }
+
         body {
             background-color: #0e0e0e;
             background-image:
@@ -80,10 +84,10 @@
         
         @keyframes contentIn {
             from {
-                transform: perspective(1500px) rotateX(-50deg);
+                transform: perspective(150vw) rotateX(-50deg);
             }
             to {
-                transform: perspective(1500px) rotateX(0deg);
+                transform: perspective(150vw) rotateX(0deg);
             }
             
         }
@@ -122,6 +126,14 @@
             background-color: #2e2e2e;
         }
 
+        .selected {
+            background: radial-gradient(circle, rgba(78,1,179,0.8) 0%, rgba(78,1,179,0.5) 50%, rgba(78,1,179,0) 100%);
+            outline: calc(2px + .2vh) solid rgba(255, 255, 255, 0.8) !important;
+            outline-offset: calc(-2px + -.2vh);
+            z-index: 99999 !important;
+            font-weight: 700;
+        }
+
         .freeDay {
             background: radial-gradient(#4f0e0e 0%, #ffffff00 100%);
         }
@@ -152,6 +164,15 @@
             outline: calc(3px + .3vh) solid white !important;
             outline-offset: calc(-3px + -.3vh);
             z-index: 99999 !important;
+            font-weight: 700;
+        }
+
+        .userEvent {
+            background: repeating-linear-gradient(45deg, rgba(78,1,179,0.8), rgba(78,1,179,0.8) 10px, transparent 10px, transparent 20px);
+            outline: calc(2px + .2vh) solid rgba(255, 255, 255, 0.8) !important;
+            outline-offset: calc(-2px + -.2vh);
+            z-index: 99999 !important;
+            font-weight: 700;
         }
 
         .dayNotInMonth {
@@ -187,10 +208,10 @@
         
         .tooltip {
             font-size: 20px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             position: fixed;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.33) 0%, rgba(0, 0, 0, 0.136) 100%);
             color: #fff;
             outline: 1px solid rgba(255, 255, 255, 0.18);
             outline-offset: -1px;
@@ -312,7 +333,10 @@
                     day.dataset.tip = holiday.localName;
                 }
             });
-            tooltips();});
+            usrEvents();
+            tooltips();
+            daySelection();
+            });
         }
 
         updateDate();
@@ -343,8 +367,8 @@
 
             if ((direction === -1 && displayedDate.getMonth() === 11) || (direction === 1 && displayedDate.getMonth() === 0) || Math.abs(direction)>1) {
             yearDisplay.animate([
-                {transform: 'perspective(500px) rotateY(90deg)', opacity: 0},
-                {transform: 'perspective(500px) rotateY(0deg)', opacity: 1}
+                {transform: 'perspective(500vw) rotateY(90deg)', opacity: 0},
+                {transform: 'perspective(500vw) rotateY(0deg)', opacity: 1}
             ], {
                 duration: 500,
                 easing: 'cubic-bezier(.2,1.6,.3,1)',
@@ -547,6 +571,86 @@
                 displayedDate = new Date(year, 0, 1);
                 updateDate();
             }
+        }
+
+        function daySelection() {
+            const days = document.querySelectorAll('#content tbody tr td');
+            days.forEach(day => {
+                day.addEventListener('click', () => {
+                    if (day.classList.contains('dayNotInMonth') || day.classList.contains('today')) return;
+                    document.querySelectorAll('.selected').forEach(selected => selected.classList.remove('selected'));
+                    day.classList.add('selected');
+                    showInputTooltip(day, 'wpisz nazwę wydarzenia...')
+                });
+            });
+        }
+
+        function showInputTooltip(targetElement, placeholderText = '') {
+            const eventDate = new Date(displayedDate.getFullYear(), displayedDate.getMonth(), targetElement.textContent);
+            const eventKey = `${eventDate.getFullYear()}-${eventDate.getMonth() + 1}-${eventDate.getDate()}`;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = placeholderText;
+            input.style.background = 'transparent';
+            input.style.border = 'none';
+            input.style.color = 'white';
+            input.style.outline = 'none';
+            input.style.fontSize = '16px';
+            input.style.textAlign = 'center';
+            input.value = targetElement.dataset.event || localStorage.getItem(eventKey) || '';
+
+            tip.innerHTML = ''; // Clear previous content
+            tip.appendChild(input);
+
+            const rect = targetElement.getBoundingClientRect();
+            let left = rect.left + rect.width / 2;
+            if (left < tip.offsetWidth / 2) {
+            left = tip.offsetWidth / 2;
+            } else if (left + tip.offsetWidth / 2 > window.innerWidth) {
+            left = window.innerWidth - tip.offsetWidth / 2;
+            }
+            tip.style.left = `${left}px`;
+            tip.style.top = `${rect.bottom + 5}px`;
+
+            tip.classList.add('visible');
+            input.focus();
+
+            targetElement.addEventListener('mouseleave', () => {
+            const eventName = input.value.trim();
+            if (eventName) {
+                localStorage.setItem(eventKey, eventName); // Save event name in localStorage
+                targetElement.dataset.event = eventName; // Save event name in the element's dataset
+                console.log(`Event saved: ${eventName} on ${eventDate.toDateString()}`);
+            } else {
+                localStorage.removeItem(eventKey); // Remove event name from localStorage
+                delete targetElement.dataset.event; // Remove event name from the element's dataset
+                targetElement.classList.remove('userEvent');
+                targetElement.removeAttribute('data-tip');
+            }
+            usrEvents();
+            tooltips();
+            tip.classList.remove('visible');
+            });
+
+            return input; // Return the input element for further use
+        }
+
+        function usrEvents() {
+            const year = displayedDate.getFullYear();
+            const month = displayedDate.getMonth();
+            
+            const usrDay = Array.from(document.querySelectorAll('#content tbody tr td')).find(td => {
+                const eventKey = `${year}-${month + 1}-${td.textContent}`;
+                const eventName = localStorage.getItem(eventKey);
+                return eventName && new Date(year, month, td.textContent).getTime() && !td.classList.contains('dayNotInMonth');
+            });
+            
+            if (usrDay) {
+                const eventKey = `${year}-${month + 1}-${usrDay.textContent}`;
+                const eventName = localStorage.getItem(eventKey);
+                usrDay.classList.add('userEvent');
+                usrDay.dataset.tip = eventName;
+            } // todo: add removing class when localStorage is empty
         }
     </script>
 </body>
