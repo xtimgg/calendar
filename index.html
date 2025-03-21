@@ -168,11 +168,26 @@
         }
 
         .userEvent {
-            background: repeating-linear-gradient(45deg, rgba(78,1,179,0.8), rgba(78,1,179,0.8) 10px, transparent 10px, transparent 20px);
+            background: repeating-linear-gradient(45deg, rgba(78,1,179,0.8), rgba(78,1,179,0.8) 1.5vw, transparent 1.5vw, transparent 3vw);
+            background-size: 200% 200%;
             outline: calc(2px + .2vh) solid rgba(255, 255, 255, 0.8) !important;
             outline-offset: calc(-2px + -.2vh);
             z-index: 99999 !important;
             font-weight: 700;
+            /* animation: ue 2s infinite linear; */
+        }
+
+        .userEvent.freeDay {
+            background: repeating-linear-gradient(45deg, rgba(78,1,179,0.8), rgba(78,1,179,0.8) 1.5vw, #4f0e0e 1.5vw, #4f0e0e 3vw);
+        }
+        
+        @keyframes ue {
+            0% {
+                background-position: 50%;
+            }
+            100% {
+                background-position: 0%;
+            }
         }
 
         .dayNotInMonth {
@@ -208,10 +223,10 @@
         
         .tooltip {
             font-size: 20px;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(20px);
             position: fixed;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.33) 0%, rgba(0, 0, 0, 0.136) 100%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.185) 0%, rgba(0, 0, 0, 0.396) 100%);
             color: #fff;
             outline: 1px solid rgba(255, 255, 255, 0.18);
             outline-offset: -1px;
@@ -433,14 +448,16 @@
                     clearTimeout(t);
                     tip.classList.remove('error');
                     const rect = e.target.getBoundingClientRect();
-                    let left = rect.left + rect.width / 2;
-                    if (left < tip.offsetWidth / 2) {
-                        left = tip.offsetWidth / 2;
-                    } else if (left + tip.offsetWidth / 2 > window.innerWidth) {
-                        left = window.innerWidth - tip.offsetWidth / 2;
-                    }
-                    tip.style.left = `${left}px`;
-                    tip.style.top = `${rect.bottom + 5}px`;
+                    setTimeout(() => {
+                        let left = rect.left + rect.width / 2;
+                        if (left < tip.offsetWidth / 2) {
+                            left = tip.offsetWidth / 2;
+                        } else if (left + tip.offsetWidth / 2 > window.innerWidth) {
+                            left = window.innerWidth - tip.offsetWidth / 2;
+                        }
+                        tip.style.left = `${left}px`;
+                        tip.style.top = `${rect.bottom + 5}px`;
+                    }, 10);
                     tip.classList.add('visible');
                     tip.textContent = el.dataset.tip;
                 });
@@ -577,7 +594,7 @@
             const days = document.querySelectorAll('#content tbody tr td');
             days.forEach(day => {
                 day.addEventListener('click', () => {
-                    if (day.classList.contains('dayNotInMonth') || day.classList.contains('today')) return;
+                    if (day.classList.contains('dayNotInMonth') || day.classList.contains('today') || day.classList.contains('holiday')) return;
                     document.querySelectorAll('.selected').forEach(selected => selected.classList.remove('selected'));
                     day.classList.add('selected');
                     showInputTooltip(day, 'wpisz nazwę wydarzenia...')
@@ -616,6 +633,7 @@
             input.focus();
 
             targetElement.addEventListener('mouseleave', () => {
+            tip.classList.remove('visible');
             const eventName = input.value.trim();
             if (eventName) {
                 localStorage.setItem(eventKey, eventName); // Save event name in localStorage
@@ -629,7 +647,6 @@
             }
             usrEvents();
             tooltips();
-            tip.classList.remove('visible');
             });
 
             return input; // Return the input element for further use
@@ -639,18 +656,19 @@
             const year = displayedDate.getFullYear();
             const month = displayedDate.getMonth();
             
-            const usrDay = Array.from(document.querySelectorAll('#content tbody tr td')).find(td => {
-                const eventKey = `${year}-${month + 1}-${td.textContent}`;
-                const eventName = localStorage.getItem(eventKey);
-                return eventName && new Date(year, month, td.textContent).getTime() && !td.classList.contains('dayNotInMonth');
+            const days = Array.from(document.querySelectorAll('#content tbody tr td'));
+            days.forEach(td => {
+            const eventKey = `${year}-${month + 1}-${td.textContent}`;
+            const eventName = localStorage.getItem(eventKey);
+            if (eventName && !td.classList.contains('dayNotInMonth')) {
+                td.classList.add('userEvent');
+                td.dataset.tip = eventName;
+            } else {
+                td.classList.remove('userEvent');
+                if(td.classList.contains('holiday')) return;
+                delete td.dataset.tip;
+            }
             });
-            
-            if (usrDay) {
-                const eventKey = `${year}-${month + 1}-${usrDay.textContent}`;
-                const eventName = localStorage.getItem(eventKey);
-                usrDay.classList.add('userEvent');
-                usrDay.dataset.tip = eventName;
-            } // todo: add removing class when localStorage is empty
         }
     </script>
 </body>
